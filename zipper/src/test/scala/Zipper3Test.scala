@@ -1,0 +1,56 @@
+import org.scalatest.{FunSuite, Matchers}
+
+/** @version created manually **/
+class Zipper3Test extends FunSuite with Matchers {
+  def empty[A]: Option[BinTree3[A]] = None
+
+  def bt[A](v: A, l: Option[BinTree3[A]], r: Option[BinTree3[A]]): Option[BinTree3[A]] =
+    Some(BinTree3(v, l, r))
+
+  def leaf[A](v: A): Option[BinTree3[A]] =
+    Some(BinTree3(v, None, None))
+
+  val t1: BinTree3[Int] = BinTree3(1, bt(2, empty, leaf(3)), leaf(4))
+  val t2: BinTree3[Int] = BinTree3(1, bt(5, empty, leaf(3)), leaf(4))
+  val t3: BinTree3[Int] = BinTree3(1, bt(2, leaf(5), leaf(3)), leaf(4))
+  val t4: BinTree3[Int] = BinTree3(1, leaf(2), leaf(4))
+
+  def fromSome[T](o: Option[T]): T = o.get
+
+  val z = Zipper3
+
+  test("data is retained") {
+    z.toTree(z.fromTree(t1)) should be(t1)
+  }
+
+  test("left, right and value") {
+    z.value(fromSome(z.right(fromSome(z.left(z.fromTree(t1)))))) should be(3)
+  }
+
+  test("dead end") {
+    z.left(fromSome(z.left(z.fromTree(t1)))) should be(None)
+  }
+
+  test("tree from deep focus") {
+    z.toTree(fromSome(z.right(fromSome(z.left(z.fromTree(t1)))))) should be(t1)
+  }
+
+  test("setValue") {
+    z.toTree(z.setValue(5, fromSome(z.left(z.fromTree(t1))))) should be(t2)
+  }
+
+  test("setLeft with Some") {
+    z.toTree(z.setLeft(Some(BinTree3(5, None, None)),
+      fromSome(z.left(z.fromTree(t1))))) should be(t3)
+  }
+
+  test("setRight with None") {
+    z.toTree(z.setRight(None, fromSome(z.left(z.fromTree(t1))))) should be(t4)
+  }
+
+  test("different paths to same zipper") {
+    z.right(fromSome(z.up(fromSome(z.left(z.fromTree(t1)))))) should be
+    z.right(z.fromTree(t1))
+  }
+}
+
